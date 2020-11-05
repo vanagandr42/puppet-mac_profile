@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>karsten</key>
+	<array>
+		<dict>
+			<key>ProfileDescription</key>
+			<string>Sets up Wi-Fi for all users that will connect at loginwindow.</string>
+			<key>ProfileDisplayName</key>
+			<string>Wi-Fi Example</string>
+			<key>ProfileIdentifier</key>
+			<string>com.vanagandr42.wifi.example</string>
+			<key>ProfileInstallDate</key>
+			<string>2020-11-04 17:58:47 +0000</string>
+			<key>ProfileItems</key>
+			<array>
+				<dict>
+					<key>PayloadContent</key>
+					<dict/>
+					<key>PayloadDescription</key>
+					<string>Provides device authentication (certificate or identity).</string>
+					<key>PayloadDisplayName</key>
+					<string>AAA Certificate Services</string>
+					<key>PayloadIdentifier</key>
+					<string>com.vanagandr42.wifi.example.credential</string>
+					<key>PayloadOrganization</key>
+					<string></string>
+					<key>PayloadType</key>
+					<string>com.apple.security.root</string>
+					<key>PayloadUUID</key>
+					<string>9B733672-E764-4B5F-9B86-B3D6D5C8E6FE</string>
+					<key>PayloadVersion</key>
+					<integer>1</integer>
+				</dict>
+				<dict>
+					<key>PayloadContent</key>
+					<dict>
+						<key>AutoJoin</key>
+						<true/>
+						<key>EAPClientConfiguration</key>
+						<dict>
+							<key>AcceptEAPTypes</key>
+							<array>
+								<integer>25</integer>
+							</array>
+							<key>EAPFASTProvisionPAC</key>
+							<false/>
+							<key>EAPFASTProvisionPACAnonymously</key>
+							<false/>
+							<key>EAPFASTUsePAC</key>
+							<false/>
+							<key>PayloadCertificateAnchorUUID</key>
+							<array>
+								<string>9B733672-E764-4B5F-9B86-B3D6D5C8E6FE</string>
+							</array>
+							<key>UserName</key>
+							<string>SampleUser</string>
+							<key>UserPassword</key>
+							<string>********</string>
+						</dict>
+						<key>EncryptionType</key>
+						<string>WPA</string>
+						<key>HIDDEN_NETWORK</key>
+						<false/>
+						<key>ProxyType</key>
+						<string>None</string>
+						<key>SSID_STR</key>
+						<string>SSampleNET-WPA2E</string>
+						<key>SetupModes</key>
+						<array>
+							<string>System</string>
+						</array>
+					</dict>
+					<key>PayloadDescription</key>
+					<string>Configures wireless connectivity settings.</string>
+					<key>PayloadDisplayName</key>
+					<string>Wi-Fi (SampleNET-WPA2E)</string>
+					<key>PayloadIdentifier</key>
+					<string>com.vanagandr42.wifi.example.wifi</string>
+					<key>PayloadOrganization</key>
+					<string></string>
+					<key>PayloadType</key>
+					<string>com.apple.wifi.managed</string>
+					<key>PayloadUUID</key>
+					<string>FB096D71-25B9-418B-82CB-FB9BD0707B23</string>
+					<key>PayloadVersion</key>
+					<integer>1</integer>
+				</dict>
+				<dict>
+					<key>PayloadContent</key>
+					<dict>
+						<key>AutoJoin</key>
+						<true/>
+						<key>EncryptionType</key>
+						<string>WPA</string>
+						<key>HIDDEN_NETWORK</key>
+						<false/>
+						<key>Password</key>
+						<string>********</string>
+						<key>ProxyType</key>
+						<string>None</string>
+						<key>SSID_STR</key>
+						<string>SampleNET-WPA2PSK</string>
+						<key>SetupModes</key>
+						<array>
+							<string>System</string>
+						</array>
+					</dict>
+					<key>PayloadDescription</key>
+					<string>Configures wireless connectivity settings.</string>
+					<key>PayloadDisplayName</key>
+					<string>Wi-Fi (SampleNET-WPA2PSK)</string>
+					<key>PayloadIdentifier</key>
+					<string>com.vanagandr42.wifi.example.wifi1</string>
+					<key>PayloadOrganization</key>
+					<string></string>
+					<key>PayloadType</key>
+					<string>com.apple.wifi.managed</string>
+					<key>PayloadUUID</key>
+					<string>484F40AD-DE85-4851-A565-608E069350C6</string>
+					<key>PayloadVersion</key>
+					<integer>1</integer>
+				</dict>
+			</array>
+			<key>ProfileOrganization</key>
+			<string></string>
+			<key>ProfileType</key>
+			<string>Configuration</string>
+			<key>ProfileUUID</key>
+			<string>228420c8-9d51-4171-BD98-A37A7E8906C1</string>
+			<key>ProfileVersion</key>
+			<integer>1</integer>
+		</dict>
+	</array>
+</dict>
+</plist>

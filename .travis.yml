@@ -1,6 +1,6 @@
 ---
-os: linux
-dist: xenial
+os: osx
+osx_image: xcode9.2
 language: ruby
 cache: bundler
 before_install:
@@ -43,7 +43,7 @@ jobs:
       stage: deploy
 branches:
   only:
-    - master
+    - main
     - /^v\d/
 notifications:
   email: false

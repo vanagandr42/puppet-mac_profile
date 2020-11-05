@@ -2,9 +2,9 @@
   "name": "vanagandr42-mac_profile",
   "version": "0.1.0",
   "author": "vanagandr42",
-  "summary": "",
+  "summary": "Puppet type/provider to manage macOS profiles",
   "license": "Apache-2.0",
-  "source": "",
+  "source": "https://github.com/vanagandr42/puppet-mac_profile",
   "dependencies": [
 
   ],
@@ -12,7 +12,10 @@
     {
       "operatingsystem": "Darwin",
       "operatingsystemrelease": [
-        "16"
+        "16",
+        "17",
+        "18",
+        "19"
       ]
     }
   ],
