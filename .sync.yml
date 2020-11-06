@@ -1,5 +1,22 @@
 # .sync.yml
 ---
+.gitlab-ci.yml:
+  delete: true
+.travis.yml:
+  os:
+    - osx
+  dist: '---'
+  ruby_versions:
+    - 2.6.3
+  includes:
+    - env: PUPPET_GEM_VERSION="~> 4.0" CHECK=parallel_spec
+      rvm: 2.1.9
+  remove_branches:
+    - master
+  branches:
+    - main
+appveyor.yml:
+  delete: true
 Gemfile:
   optional:
     ':development':
