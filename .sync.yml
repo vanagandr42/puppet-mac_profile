@@ -8,9 +8,10 @@
   dist: '---'
   ruby_versions:
     - 2.6.3
-  includes:
-    - env: PUPPET_GEM_VERSION="~> 4.0" CHECK=parallel_spec
-      rvm: 2.1.9
+  remove_includes:
+    - env: PUPPET_GEM_VERSION="~> 5.0" CHECK=parallel_spec
+      rvm: 2.4.5
+      stage: spec
   remove_branches:
     - master
   branches:
