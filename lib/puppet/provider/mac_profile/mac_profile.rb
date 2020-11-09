@@ -7,44 +7,50 @@ class Puppet::Provider::MacProfile::MacProfile < Puppet::ResourceApi::SimpleProv
   def initialize
     require 'puppet/util/plist'
     require 'puppet/util/execution'
-    # require 'cfpropertylist'
+    require 'puppet/util/uuid_v5'
   end
 
   def canonicalize(context, resources)
     resources.each do |resource|
-      resource[:uuid] = resource[:uuid].upcase if !resource[:uuid].nil? && resource[:uuid].match(context.type.attributes[:uuid][:format])
-
       unless resource[:mobileconfig].nil?
-        # TODO: transform mobileconfigstring to hash plist
-        # TODO: set PayloadIdentifier to name if absent
-        # TODO: if PayloadUUID is absent, compute uuid from mobileconfig and set it
-        # TODO: if one or more of the PayloadUUID in payloads is absent, compute uuid from payload and set it
+        resource[:mobileconfig] = Puppet::Util::Plist.parse_plist(resource[:mobileconfig])
+
+        resource[:mobileconfig]['PayloadContent'].each do |payload|
+          unless payload.key?('PayloadUUID')
+            payload['PayloadUUID'] = Puppet::Util::UuidV5.from_hash(payload)
+          end
+          payload['PayloadUUID'] = payload['PayloadUUID'].upcase if payload['PayloadUUID'].match(context.type.attributes[:uuid][:format])
+        end
+        unless resource[:mobileconfig].key?('PayloadUUID')
+          resource[:mobileconfig]['PayloadUUID'] = resource.key?(:uuid) ? resource[:uuid] : Puppet::Util::UuidV5.from_hash(resource[:mobileconfig])
+        end
+        unless resource.key?(:uuid)
+          resource[:uuid] = resource[:mobileconfig]['PayloadUUID']
+        end
+        resource[:mobileconfig]['PayloadUUID'] = resource[:mobileconfig]['PayloadUUID'].upcase if resource[:mobileconfig]['PayloadUUID'].match(context.type.attributes[:uuid][:format])
       end
 
-      if resource[:ensure] == :present
-        # TODO: PayloadIdentifier must be same as name
-        # TODO: PayloadUUID must be same as uuid
-      end
+      resource[:uuid] = resource[:uuid].upcase if !resource[:uuid].nil? && resource[:uuid].match(context.type.attributes[:uuid][:format])
     end
   end
 
   def get(context)
-    raw_profiles_xml = Puppet::Util::Execution.execute(['/usr/bin/profiles', 'show', '-type', 'configuration', '-output', 'stdout-xml'])
-    raw_profiles_hash = Puppet::Util::Plist.parse_plist(raw_profiles_xml)
+    profiles_xml = Puppet::Util::Execution.execute(['/usr/bin/profiles', 'show', '-type', 'configuration', '-output', 'stdout-xml'])
+    profiles_hash = Puppet::Util::Plist.parse_plist(profiles_xml)
 
-    profiles = []
-    unless raw_profiles_hash.nil? || (raw_profiles = raw_profiles_hash.values[0]).nil?
-      raw_profiles.each do |raw_profile|
-        profile = {
+    resources = []
+    unless profiles_hash.nil? || (profiles = profiles_hash.values[0]).nil?
+      profiles.each do |profile|
+        resource = {
           ensure: 'present',
-          name: raw_profile['ProfileIdentifier'],
-          uuid: raw_profile['ProfileUUID'].match(context.type.attributes[:uuid][:format]) ? raw_profile['ProfileUUID'].upcase : raw_profile['ProfileUUID'],
-          profile: raw_profile,
+          name: profile['ProfileIdentifier'],
+          uuid: profile['ProfileUUID'].match(context.type.attributes[:uuid][:format]) ? profile['ProfileUUID'].upcase : profile['ProfileUUID'],
+          profile: profile,
         }
-        profiles.push(profile)
+        resources.push(resource)
       end
     end
-    profiles
+    resources
   end
 
   def create(context, name, should)
@@ -57,11 +63,27 @@ class Puppet::Provider::MacProfile::MacProfile < Puppet::ResourceApi::SimpleProv
     create_or_update(context, name, should)
   end
 
-  def create_or_update(_context, _name, _should)
-    # context.notice("Creating or updating '#{name}' with #{should.inspect}")
+  def create_or_update(context, name, should)
+    if should[:mobileconfig].nil?
+      context.err("Invalid resource '#{name}' because 'mobileconfig' is missing")
+    elsif name != should[:mobileconfig]['PayloadIdentifier']
+      context.err("Invalid resource '#{name}' because name in property and identifier in mobileconfig differ")
+    elsif should[:uuid] != should[:mobileconfig]['PayloadUUID']
+      context.err("Invalid resource '#{name}' because UUID in property and mobileconfig differ")
+    end
+
+    # TODO: Create mobileconfig with file from name
+    # TODO: Encrypt mobileconfig, delete source
+    ## /usr/libexec/mdmclient encrypt "encryptprofiles.vanagandr42.com" example.mobileconfig
+    # TODO: Sign mobileconfig, delete source
+    ## /usr/bin/security cms -S -N "encryptprofiles.vanagandr42.com" -i example.encrypted.mobileconfig -o example.encrypted.signed.mobileconfig
+    # TODO: Execute profiles command if mode is set to profiles
   end
 
   def delete(context, name)
     context.notice("Deleting '#{name}'")
+
+    # TODO: Create mobileconfig with file from name (+ encrypted/signed as supplement)
+    # TODO: Execute profiles command if mode is set to profiles
   end
 end
