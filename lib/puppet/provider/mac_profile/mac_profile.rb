@@ -1,19 +1,16 @@
 # frozen_string_literal: true
 
 require 'puppet/resource_api/simple_provider'
+require 'puppet/util/execution'
+require 'puppet/util/uuid_v5'
+require 'puppet/util/plist'
 
 # Implementation for the mac_profile type using the Resource API.
 class Puppet::Provider::MacProfile::MacProfile < Puppet::ResourceApi::SimpleProvider
-  def initialize
-    require 'puppet/util/plist'
-    require 'puppet/util/execution'
-    require 'puppet/util/uuid_v5'
-  end
-
   def canonicalize(context, resources)
     resources.each do |resource|
       unless resource[:mobileconfig].nil?
-        resource[:mobileconfig] = Puppet::Util::Plist.parse_plist(resource[:mobileconfig])
+        resource[:mobileconfig] = Puppet::Util::Plist.parse_plist(resource[:mobileconfig]) if resource[:mobileconfig].is_a?(String)
 
         resource[:mobileconfig]['PayloadContent'].each do |payload|
           unless payload.key?('PayloadUUID')
@@ -64,19 +61,27 @@ class Puppet::Provider::MacProfile::MacProfile < Puppet::ResourceApi::SimpleProv
   end
 
   def create_or_update(context, name, should)
-    if should[:mobileconfig].nil?
-      context.err("Invalid resource '#{name}' because 'mobileconfig' is missing")
-    elsif name != should[:mobileconfig]['PayloadIdentifier']
-      context.err("Invalid resource '#{name}' because name in property and identifier in mobileconfig differ")
-    elsif should[:uuid] != should[:mobileconfig]['PayloadUUID']
-      context.err("Invalid resource '#{name}' because UUID in property and mobileconfig differ")
+    return context.err("Invalid resource '#{name}' because 'mobileconfig' is missing") if should[:mobileconfig].nil?
+    return context.err("Invalid resource '#{name}' because name in property and identifier in mobileconfig differ") if name != should[:mobileconfig]['PayloadIdentifier']
+    return context.err("Invalid resource '#{name}' because UUID in property and mobileconfig differ") if should[:uuid] != should[:mobileconfig]['PayloadUUID']
+
+    dir_path = File.expand_path(File.join(Puppet[:vardir], 'mobileconfigs'))
+    file_path = File.join(dir_path, name + '.mobileconfig')
+    FileUtils.mkdir(dir_path, mode: 0o600) unless Dir.exist?(dir_path)
+    Puppet::Util::Plist.write_plist_file(should[:mobileconfig], file_path)
+    FileUtils.chmod(0o600, file_path)
+
+    if should.key?(:certificate)
+      if should[:encrypt] == true
+        # TODO: Encrypt mobileconfig, delete source
+        ## /usr/libexec/mdmclient encrypt "encryptprofiles.vanagandr42.com" example.mobileconfig
+      end
+
+      # TODO: Sign mobileconfig, delete source
+      ## /usr/bin/security cms -S -N "encryptprofiles.vanagandr42.com" -i example.encrypted.mobileconfig -o example.encrypted.signed.mobileconfig
     end
 
-    # TODO: Create mobileconfig with file from name
-    # TODO: Encrypt mobileconfig, delete source
-    ## /usr/libexec/mdmclient encrypt "encryptprofiles.vanagandr42.com" example.mobileconfig
-    # TODO: Sign mobileconfig, delete source
-    ## /usr/bin/security cms -S -N "encryptprofiles.vanagandr42.com" -i example.encrypted.mobileconfig -o example.encrypted.signed.mobileconfig
+    return unless should[:mode] == :profiles
     # TODO: Execute profiles command if mode is set to profiles
   end
 

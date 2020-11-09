@@ -23,7 +23,11 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
   before(:each) do
     allow(context).to receive(:type).with(no_args).and_return(typedef)
     allow(typedef).to receive(:attributes).with(no_args).and_return(uuid: { format: %r{^.*$} })
+    allow(FileUtils).to receive(:mkdir)
+    allow(FileUtils).to receive(:chmod)
+    allow(Dir).to receive(:exist?)
     allow(Puppet::Util::Execution).to receive(:execute)
+    allow(Puppet::Util::Plist).to receive(:write_plist_file)
   end
 
   describe 'canonicalize(context, resources)' do
@@ -317,21 +321,21 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
     end
   end
 
-  describe 'create(context, name, should)' do
-    # it 'creates the resource' do
-    #   expect(context).to receive(:notice).with(%r{\ACreating 'a'})
+  # describe 'create(context, name, should)' do
+  #   it 'creates the resource' do
+  #     expect(context).to receive(:notice).with(%r{\ACreating 'a'})
 
-    #   provider.create(context, 'a', name: 'a', ensure: 'present')
-    # end
-  end
+  #     provider.create(context, 'a', name: 'a', ensure: 'present')
+  #   end
+  # end
 
-  describe 'update(context, name, should)' do
-    # it 'updates the resource' do
-    #   expect(context).to receive(:notice).with(%r{\AUpdating 'foo'})
+  # describe 'update(context, name, should)' do
+  #   it 'updates the resource' do
+  #     expect(context).to receive(:notice).with(%r{\AUpdating 'foo'})
 
-    #   provider.update(context, 'foo', name: 'foo', ensure: 'present')
-    # end
-  end
+  #     provider.update(context, 'foo', name: 'foo', ensure: 'present')
+  #   end
+  # end
 
   describe 'create_or_update(context, name, should)' do
     it 'fails if no mobileconfig is defined' do
@@ -348,33 +352,65 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
       should = {
         ensure:       'present',
         name:         'com.vanagandr42.maximal',
-        mobileconfig: Puppet::Util::Plist.parse_plist(minimal_mobileconfig),
+        mobileconfig: {
+          'PayloadIdentifier' => 'com.vanagandr42.minimal',
+          'PayloadUUID'       => '228420C8-9D51-4171-BD98-A37A7E8906C1',
+        },
+        uuid:         '228420C8-9D51-4171-BD98-A37A7E8906C1',
       }
 
       expect(context).to receive(:err)
       provider.create_or_update(context, 'com.vanagandr42.maximal', should)
     end
 
-    it 'succeeds if uuid in resource and mobileconfig are the same' do
+    it 'fails if uuid in resource and mobileconfig are not the same' do
       should = {
         ensure:       'present',
         name:         'com.vanagandr42.minimal',
-        mobileconfig: Puppet::Util::Plist.parse_plist(minimal_mobileconfig),
+        mobileconfig: {
+          'PayloadIdentifier' => 'com.vanagandr42.minimal',
+          'PayloadUUID'       => '228420C8-9D51-4171-BD98-A37A7E8906C1',
+        },
+        uuid:         '68BB6A40-9AFA-49B0-9A2C-FD8DF7EAD24A',
+      }
+
+      expect(context).to receive(:err)
+      provider.create_or_update(context, 'com.vanagandr42.minimal', should)
+    end
+
+    it 'succeeds if name & uuid in resource and mobileconfig are the same' do
+      should = {
+        ensure:       'present',
+        name:         'com.vanagandr42.minimal',
+        mobileconfig: {
+          'PayloadIdentifier' => 'com.vanagandr42.minimal',
+          'PayloadUUID'       => '228420C8-9D51-4171-BD98-A37A7E8906C1',
+        },
         uuid:         '228420C8-9D51-4171-BD98-A37A7E8906C1',
       }
 
       provider.create_or_update(context, 'com.vanagandr42.minimal', should)
     end
 
-    it 'fails if uuid in resource and mobileconfig are not the same' do
+    it 'succeeds to create a mobileconfig file' do
       should = {
         ensure:       'present',
         name:         'com.vanagandr42.minimal',
-        mobileconfig: Puppet::Util::Plist.parse_plist(minimal_mobileconfig),
-        uuid:         '68BB6A40-9AFA-49B0-9A2C-FD8DF7EAD24A',
+        mode:         :file,
+        mobileconfig: {
+          'PayloadIdentifier' => 'com.vanagandr42.minimal',
+          'PayloadUUID'       => '228420C8-9D51-4171-BD98-A37A7E8906C1',
+        },
+        uuid:         '228420C8-9D51-4171-BD98-A37A7E8906C1',
       }
 
-      expect(context).to receive(:err)
+      expect(Dir).to receive(:exist?).with('/dev/null/mobileconfigs').and_return(false)
+      expect(FileUtils).to receive(:mkdir).with('/dev/null/mobileconfigs', mode: 0o600)
+      expect(Puppet::Util::Plist).to receive(:write_plist_file).with(
+        a_hash_including('PayloadIdentifier' => 'com.vanagandr42.minimal'),
+        '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig',
+      )
+      expect(FileUtils).to receive(:chmod).with(0o600, '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig')
       provider.create_or_update(context, 'com.vanagandr42.minimal', should)
     end
   end

@@ -41,7 +41,7 @@ EOS
       default:   'profiles',
     },
     mobileconfig: {
-      type:      'String',
+      type:      'Variant[Hash, String]',
       desc:      'Content of the profile in mobileconfig xml plist format.',
       behaviour: :parameter,
     },
@@ -52,7 +52,7 @@ EOS
       format: %r{^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$},
     },
     certificate: {
-      type:      'String',
+      type:      'Optional[String]',
       desc:      'Name of the certificate as shown in the keychain. Mobileconfig will be signed if defined.',
       behaviour: :parameter,
     },
