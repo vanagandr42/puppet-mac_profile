@@ -42,6 +42,32 @@ RSpec.describe 'the mac_profile type' do
     end
   end
 
+  context 'with mobileconfig set' do
+    let(:name) { 'com.vanagandr42.wifi.example' }
+
+    it 'throws no error if mobileconfig is a string' do
+      expect {
+        Puppet::Type.type(:mac_profile).new(
+          name:         name,
+          mobileconfig: 'This is a mobileconfig string.',
+        )
+      }.not_to raise_error
+    end
+
+    it 'throws no error if mobileconfig is a hash' do
+      expect {
+        Puppet::Type.type(:mac_profile).new(
+          name:         name,
+          mobileconfig: {
+            'PayloadIdentifier'  => name,
+            'PayloadDescription' => 'This is a description.',
+            'PayloadContent'     => [],
+          },
+        )
+      }.not_to raise_error
+    end
+  end
+
   context 'with uuid set' do
     let(:name) { 'com.vanagandr42.wifi.example' }
 

@@ -1,117 +1,105 @@
 # mac_profile
 
-Welcome to your new module. A short overview of the generated parts can be found
-in the [PDK documentation][1].
-
-The README template below provides a starting point with details about what
-information to include in your README.
-
 ## Table of Contents
 
 1. [Description](#description)
 1. [Setup - The basics of getting started with mac_profile](#setup)
     * [What mac_profile affects](#what-mac_profile-affects)
-    * [Setup requirements](#setup-requirements)
     * [Beginning with mac_profile](#beginning-with-mac_profile)
 1. [Usage - Configuration options and additional functionality](#usage)
 1. [Limitations - OS compatibility, etc.](#limitations)
-1. [Development - Guide for contributing to the module](#development)
 
 ## Description
 
-Briefly tell users why they might want to use your module. Explain what your
-module does and what kind of problems users can solve with it.
-
-This should be a fairly short description helps the user decide if your module
-is what they want.
+This module provides basic functionality for macOS profiles via the 
+mobileconfig format. A mobileconfig which is created in Puppet (e.g. with a 
+template) can be used to install, update and remove a profile on a macOS 
+client.
 
 ## Setup
 
-### What mac_profile affects **OPTIONAL**
+### What mac_profile affects
 
-If it's obvious what your module touches, you can skip this section. For
-example, folks can probably figure out that your mysql_instance module affects
-their MySQL instances.
-
-If there's more that they should know about, though, this is the place to
-mention:
-
-* Files, packages, services, or operations that the module will alter, impact,
-  or execute.
-* Dependencies that your module automatically installs.
-* Warnings or other important notices.
-
-### Setup Requirements **OPTIONAL**
-
-If your module requires anything extra before setting up (pluginsync enabled,
-another module, etc.), mention it here.
-
-If your most recent release breaks compatibility or requires particular steps
-for upgrading, you might want to include an additional "Upgrading" section here.
+Apart from (obviously) installing and removing profiles, this module writes
+the mobileconfig files to the Puppet cache directory (e.g. 
+`/opt/puppetlabs/puppet/cache/mobileconfigs`). These files can be used to install
+a profile manually if the `install` verb of the profiles command is not supported 
+by macOS anymore (starting with Big Sur).
 
 ### Beginning with mac_profile
 
-The very basic steps needed for a user to get the module up and running. This
-can include setup steps, if necessary, or it can be an example of the most basic
-use of the module.
+The basic step to install a profile is to provide the profile name and the 
+mobileconfig string (e.g. using a template) as follows:
+```ruby
+mac_profile { 'com.acme.wifi' }
+  ensure       => present,
+  mobileconfig => epp('profile/module/com.acme.wifi.mobileconfig.epp'),
+}
+```
 
 ## Usage
+One issue with profiles is that the original content of the mobileconfig file
+cannot be extracted again completely from the client. It is obvious why when 
+you consider passwords and keys which can be configured using profiles.
 
-Include usage examples for common use cases in the **Usage** section. Show your
-users how to use your module to solve problems, and be sure to include code
-examples. Include three to five examples of the most important or common tasks a
-user can accomplish with your module. Show users how to accomplish more complex
-tasks that involve different types, classes, and functions working in tandem.
+Therefore a workaround is needed to find out if the profile currently installed 
+on the client is the same one as in the mobileconfig in the Puppet catalog. This module 
+diverts the `PayloadUUID` in the mobileconfig to achieve that: If both are the 
+same the profile is considered to be up-to-date, if they do not match the profile 
+will be updated with the values in the mobileconfig.
 
-## Reference
+There are three ways to manage the UUID:
+* It can be defined in the mobileconfig as `PayloadUUID` (like it is normally 
+done.)
+* It can be defined in the Puppet resource using the `uuid` parameter. In this 
+case `PayloadUUID` must be removed from the mobileconfig.
+* It can be neither defined in the Puppet resource nor as `PayloadUUID` in the 
+mobileconfig. Here the UUID is generated automatically from a checksum of the 
+mobileconfig. This is the recommended method because changes in the 
+mobileconfig are picked up automatically.
 
-This section is deprecated. Instead, add reference information to your code as
-Puppet Strings comments, and then use Strings to generate a REFERENCE.md in your
-module. For details on how to add code comments and generate documentation with
-Strings, see the [Puppet Strings documentation][2] and [style guide][3].
+This module can be used both in priviliged and unprivileged mode:
+* If Puppet runs in priviliged mode, this type manages device profiles. 
+* If Puppet runs in unprivileged mode, it manages user profiles.
 
-If you aren't ready to use Strings yet, manually create a REFERENCE.md in the
-root of your module directory and list out each of your module's classes,
-defined types, facts, functions, Puppet tasks, task plans, and resource types
-and providers, along with the parameters for each.
-
-For each element (class, defined type, function, and so on), list:
-
-* The data type, if applicable.
-* A description of what the element does.
-* Valid values, if the data type doesn't make it obvious.
-* Default value, if any.
-
-For example:
-
+If the mobileconfig contains secrets like a password, it is a good idea to use 
+the Sensitive data type:
+```ruby
+mac_profile { 'com.acme.wifi' }
+  ensure       => present,
+  mobileconfig => Sensitive(epp('profile/module/com.acme.wifi.mobileconfig.epp')),
+}
 ```
-### `pet::cat`
 
-#### Parameters
+If there is a suitable certificate in the client's keychain (public & private 
+key), this can be used to sign the mobileconfig:
+```ruby
+mac_profile { 'com.acme.wifi' }
+  ensure       => present,
+  mobileconfig => epp('profile/module/com.acme.wifi.mobileconfig.epp'),
+  certificate  => 'My Certificate'
+}
+```
 
-##### `meow`
-
-Enables vocalization in your cat. Valid options: 'string'.
-
-Default: 'medium-loud'.
+Even encryption can be done:
+```ruby
+mac_profile { 'com.acme.wifi' }
+  ensure       => present,
+  mobileconfig => Sensitive(epp('profile/module/com.acme.wifi.mobileconfig.epp')),
+  certificate  => 'My Certificate'
+  encrypt      => true
+}
 ```
 
 ## Limitations
 
-In the Limitations section, list any incompatibilities, known issues, or other
-warnings.
+This module relies on the macOS `profiles` command, which defines
+eventually the user experience. An update might run depending on the 
+environment:
+* totally silent,
+* require some user interaction like providing a password
+* or fail altogether because a verb is no longer supported (e.g. in Big Sur)
 
-## Development
-
-In the Development section, tell other users the ground rules for contributing
-to your project and how they should submit their work.
-
-## Release Notes/Contributors/Etc. **Optional**
-
-If you aren't using changelog, put your release notes here (though you should
-consider using changelog). You can also add any additional sections you feel are
-necessary or important to include here. Please use the `##` header.
-
-[1]: https://puppet.com/docs/pdk/latest/pdk_generating_modules.html
-[2]: https://puppet.com/docs/puppet/latest/puppet_strings.html
-[3]: https://puppet.com/docs/puppet/latest/puppet_strings_style.html
+The only fully automated way to manage profiles is through an MDM. Possibly the 
+create/update/delete methods of the Puppet provider can be adapted to use a 
+vendor specific MDM API instead of the macOS profiles command.

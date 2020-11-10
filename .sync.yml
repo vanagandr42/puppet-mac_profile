@@ -6,6 +6,7 @@
   os:
     - osx
   dist: '---'
+  simplecov: true
   ruby_versions:
     - 2.6.3
   remove_includes:
