@@ -79,7 +79,7 @@ key), this can be used to sign the mobileconfig:
 mac_profile { 'com.acme.wifi' }
   ensure       => present,
   mobileconfig => epp('profile/module/com.acme.wifi.mobileconfig.epp'),
-  certificate  => 'My Certificate'
+  certificate  => 'My Certificate',
 }
 ```
 
@@ -88,8 +88,8 @@ Even encryption can be done:
 mac_profile { 'com.acme.wifi' }
   ensure       => present,
   mobileconfig => Sensitive(epp('profile/module/com.acme.wifi.mobileconfig.epp')),
-  certificate  => 'My Certificate'
-  encrypt      => true
+  certificate  => 'My Certificate',
+  encrypt      => true,
 }
 ```
 
