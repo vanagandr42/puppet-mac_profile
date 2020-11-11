@@ -552,7 +552,7 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
 
       expect(context).to receive(:notice).with(%r{\ACreating 'com.vanagandr42.minimal'})
       expect(Dir).to receive(:exist?).with('/dev/null/mobileconfigs').and_return(false)
-      expect(FileUtils).to receive(:mkdir).with('/dev/null/mobileconfigs', mode: 0o600)
+      expect(FileUtils).to receive(:mkdir).with('/dev/null/mobileconfigs', mode: 0o700)
       expect(Puppet::Util::Plist).to receive(:write_plist_file).with(
         a_hash_including('PayloadIdentifier' => 'com.vanagandr42.minimal'),
         '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig',
@@ -600,7 +600,7 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
       }
 
       expect(Dir).to receive(:exist?).with('/dev/null/mobileconfigs').and_return(false)
-      expect(FileUtils).to receive(:mkdir).with('/dev/null/mobileconfigs', mode: 0o600)
+      expect(FileUtils).to receive(:mkdir).with('/dev/null/mobileconfigs', mode: 0o700)
       expect(Puppet::Util::Plist).to receive(:write_plist_file).with(
         a_hash_including('PayloadIdentifier' => 'com.vanagandr42.minimal'),
         '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig',
@@ -630,7 +630,7 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
       }
 
       expect(Dir).to receive(:exist?).with('/dev/null/mobileconfigs').and_return(false)
-      expect(FileUtils).to receive(:mkdir).with('/dev/null/mobileconfigs', mode: 0o600)
+      expect(FileUtils).to receive(:mkdir).with('/dev/null/mobileconfigs', mode: 0o700)
       expect(Puppet::Util::Plist).to receive(:write_plist_file).with(
         a_hash_including('PayloadIdentifier' => 'com.vanagandr42.minimal'),
         '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig',

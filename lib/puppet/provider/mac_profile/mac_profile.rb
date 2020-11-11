@@ -73,7 +73,7 @@ class Puppet::Provider::MacProfile::MacProfile < Puppet::ResourceApi::SimpleProv
     dir_path = File.expand_path(File.join(Puppet[:vardir], 'mobileconfigs'))
     file_name = name
     file_path = File.join(dir_path, file_name + '.mobileconfig')
-    FileUtils.mkdir(dir_path, mode: 0o600) unless Dir.exist?(dir_path)
+    FileUtils.mkdir(dir_path, mode: 0o700) unless Dir.exist?(dir_path)
     Puppet::Util::Plist.write_plist_file(mobileconfig, file_path)
     FileUtils.chmod(0o600, file_path)
 
