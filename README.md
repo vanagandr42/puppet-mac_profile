@@ -1,5 +1,5 @@
 # mac_profile
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fvanagandr42%2Fpuppet-mac_profile.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fvanagandr42%2Fpuppet-mac_profile?ref=badge_shield)
+[![TravisCI Build Status](https://travis-ci.com/vanagandr42/puppet-mac_profile.svg?branch=main)](https://travis-ci.com/vanagandr42/puppet-mac_profile) [![codecov](https://codecov.io/gh/vanagandr42/puppet-mac_profile/branch/main/graph/badge.svg)](https://codecov.io/gh/vanagandr42/puppet-mac_profile) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fvanagandr42%2Fpuppet-mac_profile.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fvanagandr42%2Fpuppet-mac_profile?ref=badge_shield)
 
 
 ## Table of Contents
@@ -105,7 +105,3 @@ environment:
 The only fully automated way to manage profiles is through an MDM. Possibly the 
 create/update/delete methods of the Puppet provider can be adapted to use a 
 vendor specific MDM API instead of the macOS profiles command.
-
-
-## License
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fvanagandr42%2Fpuppet-mac_profile.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fvanagandr42%2Fpuppet-mac_profile?ref=badge_large)
