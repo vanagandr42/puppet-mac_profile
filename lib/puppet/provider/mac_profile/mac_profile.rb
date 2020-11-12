@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'openssl'
 require 'puppet/resource_api/simple_provider'
 require 'puppet/util/execution'
 require 'puppet/util/uuid_v5'
@@ -70,31 +71,31 @@ class Puppet::Provider::MacProfile::MacProfile < Puppet::ResourceApi::SimpleProv
     return context.err("Invalid resource '#{name}' because name in property and identifier in mobileconfig differ") if name != mobileconfig['PayloadIdentifier']
     return context.err("Invalid resource '#{name}' because UUID in property and mobileconfig differ") if should[:uuid] != mobileconfig['PayloadUUID']
 
+    if should.key?(:certificate) && should[:encrypt] == true && mobileconfig.key?('PayloadContent')
+      output = Puppet::Util::Execution.execute(['/usr/bin/security', 'find-certificate', '-c', should[:certificate], '-p'])
+      return context.err("Could not get certificate for '#{should[:certificate]}', failed with '#{output}'") unless output.exitstatus.zero?
+      certificate = OpenSSL::X509::Certificate.new(output)
+      payload = mobileconfig.delete('PayloadContent')
+      encrypted_payload = OpenSSL::PKCS7.encrypt([certificate], Puppet::Util::Plist.dump_plist(payload), OpenSSL::Cipher.new('AES-128-CBC'), OpenSSL::PKCS7::BINARY)
+      mobileconfig['EncryptedPayloadContent'] = StringIO.new(encrypted_payload.to_der)
+    end
+
     dir_path = File.expand_path(File.join(Puppet[:vardir], 'mobileconfigs'))
     file_name = name
     file_path = File.join(dir_path, file_name + '.mobileconfig')
     FileUtils.mkdir(dir_path, mode: 0o700) unless Dir.exist?(dir_path)
     Puppet::Util::Plist.write_plist_file(mobileconfig, file_path)
+    return context.err("Creation of mobileconfig file failed for resource '#{name}'") unless File.exist?(file_path)
     FileUtils.chmod(0o600, file_path)
 
     if should.key?(:certificate)
-      if should[:encrypt] == true
-        # /usr/libexec/mdmclient encrypt "encryptprofiles.vanagandr42.com" example.mobileconfig
-        Puppet::Util::Execution.execute(['/usr/libexec/mdmclient', 'encrypt', should[:certificate], file_path])
-        FileUtils.rm(file_path)
-        file_name += '.encrypted'
-        file_path = File.join(dir_path, file_name + '.mobileconfig')
-        return context.err("Encryption failed for resource '#{name}'") unless File.exist?(file_path)
-        FileUtils.chmod(0o600, file_path)
-      end
-
-      # /usr/bin/security cms -S -N "encryptprofiles.vanagandr42.com" -i example.encrypted.mobileconfig -o example.encrypted.signed.mobileconfig
       file_out_path = File.join(dir_path, file_name + '.signed.mobileconfig')
-      Puppet::Util::Execution.execute(['/usr/bin/security', 'cms', '-S', '-N', should[:certificate], '-i', file_path, '-o', file_out_path])
+      output = Puppet::Util::Execution.execute(['/usr/bin/security', 'cms', '-S', '-N', should[:certificate], '-i', file_path, '-o', file_out_path])
       FileUtils.rm(file_path)
+      return context.err("Could not sign '#{name}', failed with '#{output}'") unless output.exitstatus.zero?
       file_name += '.signed'
       file_path = File.join(dir_path, file_name + '.mobileconfig')
-      return context.err("Signing failed for resource '#{name}'") unless File.exist?(file_path)
+      return context.err("Creation of signed mobileconfig file failed for resource '#{name}'") unless File.exist?(file_path)
       FileUtils.chmod(0o600, file_path)
     end
 
@@ -105,7 +106,7 @@ class Puppet::Provider::MacProfile::MacProfile < Puppet::ResourceApi::SimpleProv
     context.notice("Deleting '#{name}'")
 
     dir_path = File.expand_path(File.join(Puppet[:vardir], 'mobileconfigs'))
-    ['.mobileconfig', '.signed.mobileconfig', '.encrypted.signed.mobileconfig'].each do |suffix|
+    ['.mobileconfig', '.signed.mobileconfig'].each do |suffix|
       file_path = File.join(dir_path, name + suffix)
       FileUtils.rm(file_path) if File.exist?(file_path)
     end

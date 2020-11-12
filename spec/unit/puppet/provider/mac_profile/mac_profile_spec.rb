@@ -25,6 +25,7 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
   minimal_with_lowercase_uuid_mobileconfig = File.read(File.expand_path(File.join(File.dirname(__FILE__), '../../data', 'minimal_with_lowercase_uuid.mobileconfig')))
   example_mobileconfig = File.read(File.expand_path(File.join(File.dirname(__FILE__), '../../data', 'example.mobileconfig')))
   example_reordered_mobileconfig = File.read(File.expand_path(File.join(File.dirname(__FILE__), '../../data', 'example_reordered.mobileconfig')))
+  certificate_pem = File.read(File.expand_path(File.join(File.dirname(__FILE__), '../../data', 'certificate.pem')))
 
   let(:context) { instance_double('Puppet::ResourceApi::BaseContext', 'context') }
   let(:typedef) { instance_double('Puppet::ResourceApi::TypeDefinition', 'typedef') }
@@ -466,7 +467,7 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
         name:   'com.vanagandr42.minimal',
       }
 
-      expect(context).to receive(:err)
+      expect(context).to receive(:err).with(%r{'com.vanagandr42.minimal' because 'mobileconfig' is missing})
       provider.create_or_update(context, 'com.vanagandr42.minimal', should)
     end
 
@@ -477,7 +478,7 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
         mobileconfig: 'This is invalid!',
       }
 
-      expect(context).to receive(:err)
+      expect(context).to receive(:err).with(%r{'com.vanagandr42.minimal' because 'mobileconfig' has wrong format})
       provider.create_or_update(context, 'com.vanagandr42.minimal', should)
     end
 
@@ -492,7 +493,7 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
         uuid:         '228420C8-9D51-4171-BD98-A37A7E8906C1',
       }
 
-      expect(context).to receive(:err)
+      expect(context).to receive(:err).with(%r{'com.vanagandr42.maximal' because name in property and identifier in mobileconfig differ})
       provider.create_or_update(context, 'com.vanagandr42.maximal', should)
     end
 
@@ -507,7 +508,7 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
         uuid:         '68BB6A40-9AFA-49B0-9A2C-FD8DF7EAD24A',
       }
 
-      expect(context).to receive(:err)
+      expect(context).to receive(:err).with(%r{'com.vanagandr42.minimal' because UUID in property and mobileconfig differ})
       provider.create_or_update(context, 'com.vanagandr42.minimal', should)
     end
 
@@ -522,6 +523,7 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
         uuid:         '228420C8-9D51-4171-BD98-A37A7E8906C1',
       }
 
+      expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig').and_return(true)
       provider.create_or_update(context, 'com.vanagandr42.minimal', should)
     end
 
@@ -536,6 +538,7 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
         uuid:         '228420C8-9D51-4171-BD98-A37A7E8906C1',
       }
 
+      expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig').and_return(true)
       provider.create_or_update(context, 'com.vanagandr42.minimal', should)
     end
 
@@ -557,7 +560,9 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
         a_hash_including('PayloadIdentifier' => 'com.vanagandr42.minimal'),
         '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig',
       )
+      expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig').and_return(true)
       expect(FileUtils).to receive(:chmod).with(0o600, '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig')
+
       expect(Puppet::Util::Execution).to receive(:execute).with(array_including('/usr/bin/profiles', 'install', '-path', '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig'))
 
       provider.create(context, 'com.vanagandr42.minimal', should)
@@ -581,7 +586,9 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
         a_hash_including('PayloadIdentifier' => 'com.vanagandr42.minimal'),
         '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig',
       )
+      expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig').and_return(true)
       expect(FileUtils).to receive(:chmod).with(0o600, '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig')
+
       expect(Puppet::Util::Execution).to receive(:execute).with(array_including('/usr/bin/profiles', 'install', '-path', '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig'))
 
       provider.update(context, 'com.vanagandr42.minimal', should)
@@ -594,6 +601,7 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
         mobileconfig: {
           'PayloadIdentifier' => 'com.vanagandr42.minimal',
           'PayloadUUID'       => '228420C8-9D51-4171-BD98-A37A7E8906C1',
+          'PayloadContent'    => [{ 'PayloadIdentifier' => 'com.vanagandr42.minimal.wifi', 'PayloadUUID' => 'DB3C556B-14A5-47D3-B8E1-F270F20731B2' }],
         },
         uuid:         '228420C8-9D51-4171-BD98-A37A7E8906C1',
         certificate:  'my.certificate',
@@ -605,9 +613,14 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
         a_hash_including('PayloadIdentifier' => 'com.vanagandr42.minimal'),
         '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig',
       )
+      expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig').and_return(true)
       expect(FileUtils).to receive(:chmod).with(0o600, '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig')
 
-      expect(Puppet::Util::Execution).to receive(:execute).with(array_including(%r{/security\z}, 'cms', '-S', '-N', 'my.certificate', '-i', %r{l.mobileconfig\z}, '-o', %r{l.signed.mobileconfig\z}))
+      expect(Puppet::Util::Execution)
+        .to receive(:execute)
+        .with(array_including(%r{/security\z}, 'cms', '-S', '-N', 'my.certificate', '-i', %r{minimal.mobileconfig\z}, '-o', %r{minimal.signed.mobileconfig\z}))
+        .and_return(Puppet::Util::Execution::ProcessOutput.new('success', 0))
+      expect(FileUtils).to receive(:rm).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig')
       expect(FileUtils).to receive(:chmod).with(0o600, '/dev/null/mobileconfigs/com.vanagandr42.minimal.signed.mobileconfig')
       expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.signed.mobileconfig').and_return(true)
 
@@ -623,45 +636,50 @@ RSpec.describe Puppet::Provider::MacProfile::MacProfile do
         mobileconfig: {
           'PayloadIdentifier' => 'com.vanagandr42.minimal',
           'PayloadUUID'       => '228420C8-9D51-4171-BD98-A37A7E8906C1',
+          'PayloadContent'    => [{ 'PayloadIdentifier' => 'com.vanagandr42.minimal.wifi', 'PayloadUUID' => 'DB3C556B-14A5-47D3-B8E1-F270F20731B2' }],
         },
         uuid:         '228420C8-9D51-4171-BD98-A37A7E8906C1',
         certificate:  'my.certificate',
         encrypt:      true,
       }
 
+      expect(Puppet::Util::Execution)
+        .to receive(:execute)
+        .with(array_including(%r{/security\z}, 'find-certificate', '-c', 'my.certificate', '-p'))
+        .and_return(Puppet::Util::Execution::ProcessOutput.new(certificate_pem, 0))
       expect(Dir).to receive(:exist?).with('/dev/null/mobileconfigs').and_return(false)
       expect(FileUtils).to receive(:mkdir).with('/dev/null/mobileconfigs', mode: 0o700)
-      expect(Puppet::Util::Plist).to receive(:write_plist_file).with(
-        a_hash_including('PayloadIdentifier' => 'com.vanagandr42.minimal'),
-        '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig',
-      )
+      expect(Puppet::Util::Plist).to receive(:write_plist_file) do |mobileconfig, path|
+        expect(mobileconfig).to have_key('PayloadIdentifier')
+        expect(mobileconfig['PayloadIdentifier']).to eq 'com.vanagandr42.minimal'
+        expect(mobileconfig).not_to have_key('PayloadContent')
+        expect(mobileconfig).to have_key('EncryptedPayloadContent')
+        expect(path).to eq '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig'
+      end
+      expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig').and_return(true)
       expect(FileUtils).to receive(:chmod).with(0o600, '/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig')
 
-      expect(Puppet::Util::Execution).to receive(:execute).with(array_including(%r{/mdmclient\z}, 'encrypt', 'my.certificate', %r{com.vanagandr42.minimal.mobileconfig\z}))
-      expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.encrypted.mobileconfig').and_return(true)
-      expect(FileUtils).to receive(:chmod).with(0o600, '/dev/null/mobileconfigs/com.vanagandr42.minimal.encrypted.mobileconfig')
+      expect(Puppet::Util::Execution)
+        .to receive(:execute)
+        .with(array_including(%r{/security\z}, 'cms', '-S', '-N', 'my.certificate', '-i', %r{minimal.mobileconfig\z}, '-o', %r{minimal.signed.mobileconfig\z}))
+        .and_return(Puppet::Util::Execution::ProcessOutput.new('success', 0))
+      expect(FileUtils).to receive(:rm).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig')
+      expect(FileUtils).to receive(:chmod).with(0o600, '/dev/null/mobileconfigs/com.vanagandr42.minimal.signed.mobileconfig')
+      expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.signed.mobileconfig').and_return(true)
 
-      expect(Puppet::Util::Execution).to receive(:execute).with(
-        array_including(%r{/security\z}, 'cms', '-S', '-N', 'my.certificate', '-i', %r{minimal.encrypted.mobileconfig\z}, '-o', %r{minimal.encrypted.signed.mobileconfig\z}),
-      )
-      expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.encrypted.signed.mobileconfig').and_return(true)
-      expect(FileUtils).to receive(:chmod).with(0o600, '/dev/null/mobileconfigs/com.vanagandr42.minimal.encrypted.signed.mobileconfig')
-
-      expect(Puppet::Util::Execution).to receive(:execute).with(array_including('/usr/bin/profiles', 'install', '-path', %r{com.vanagandr42.minimal.encrypted.signed.mobileconfig\z}))
+      expect(Puppet::Util::Execution).to receive(:execute).with(array_including('/usr/bin/profiles', 'install', '-path', %r{com.vanagandr42.minimal.signed.mobileconfig\z}))
 
       provider.create_or_update(context, 'com.vanagandr42.minimal', should)
     end
   end
 
   describe 'delete(context, name)' do
-    it 'succeeds to update a profile' do
+    it 'succeeds to delete a profile' do
       expect(context).to receive(:notice).with(%r{\ADeleting 'com.vanagandr42.minimal'})
       expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig').and_return(false)
       expect(FileUtils).not_to receive(:rm).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.mobileconfig')
       expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.signed.mobileconfig').and_return(true)
       expect(FileUtils).to receive(:rm).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.signed.mobileconfig')
-      expect(File).to receive(:exist?).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.encrypted.signed.mobileconfig').and_return(false)
-      expect(FileUtils).not_to receive(:rm).with('/dev/null/mobileconfigs/com.vanagandr42.minimal.encrypted.signed.mobileconfig')
       expect(Puppet::Util::Execution).to receive(:execute).with(array_including('/usr/bin/profiles', 'remove', '-identifier', 'com.vanagandr42.minimal'))
 
       provider.delete(context, 'com.vanagandr42.minimal')
